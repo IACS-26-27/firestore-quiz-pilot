@@ -1,0 +1,61 @@
+body {
+  font-family: system-ui, sans-serif;
+  max-width: 40rem;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  color: #222;
+}
+
+#status {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+fieldset {
+  margin-bottom: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 0.5rem;
+}
+
+legend {
+  font-weight: bold;
+  padding: 0 0.5rem;
+}
+
+.option {
+  display: block;
+  padding: 0.25rem 0;
+}
+
+button {
+  font: inherit;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+#results {
+  margin-top: 2rem;
+}
+
+.bar-row {
+  margin-bottom: 0.5rem;
+}
+
+.bar-row span {
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 0.15rem;
+}
+
+.bar {
+  background: #eee;
+  border-radius: 0.25rem;
+  overflow: hidden;
+  height: 1.25rem;
+}
+
+.bar-fill {
+  background: #556;
+  height: 100%;
+  transition: width 0.3s ease;
+}

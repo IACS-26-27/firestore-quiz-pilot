@@ -1,0 +1,36 @@
+rules_version = '2';
+
+// Paste this into the Firebase Console -> Firestore Database -> Rules tab,
+// then click Publish. This is what actually protects your data -- not
+// firebase-config.js, which is public on purpose.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /quizzes/{quizId} {
+      // Anyone can read the quiz (the questions themselves).
+      allow read: if true;
+
+      // Nobody writes a quiz through the app. You author it by hand in the
+      // Firestore console, which uses your own Google account's permissions
+      // and is NOT subject to these rules at all -- rules only govern
+      // requests made through the client SDK (i.e. from app.js).
+      allow write: if false;
+
+      match /responses/{uid} {
+        // Anyone can read responses -- we need that to compute the
+        // aggregate "54% Harry / 46% Ron" stats. (Discussion question: what
+        // does this rule also let a visitor see that you might not want
+        // public? See the README.)
+        allow read: if true;
+
+        // You may only ever create or overwrite the response document
+        // whose ID is YOUR OWN uid. There is no way to write to another
+        // user's response document, and no document path holds a count
+        // that two people could race to update.
+        allow create, update: if request.auth != null && request.auth.uid == uid;
+
+        // Nobody deletes a response once it exists.
+        allow delete: if false;
+      }
+    }
+  }
+}

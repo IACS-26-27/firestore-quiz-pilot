@@ -1,0 +1,16 @@
+{
+  "name": "firestore-board",
+  "version": "1.0.0",
+  "description": "Shared message board backed by Firestore",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "live-server ./"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  }
+}
