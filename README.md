@@ -8,6 +8,24 @@ This is the "hello world" of document databases: one document holds
 structured data (a title + a list of questions), and a whole collection of
 small documents (one per person) holds the responses.
 
+## Configured teacher pilot
+
+This checkout is connected to **IACS Firestore Quiz Pilot**
+(`iacs-firestore-quiz-pilot`) on the free Spark plan. The default Firestore
+database is in `us-east1`, and `quizzes/quiz-1` contains the four questions
+below. Google sign-in is enabled. The authorized domains include
+`iacs-26-27.github.io`, `localhost`, and `127.0.0.1`.
+
+- [Open the pilot](https://iacs-26-27.github.io/firestore-quiz-pilot/)
+- [Open Firebase](https://console.firebase.google.com/project/iacs-firestore-quiz-pilot/overview)
+- Deploy changes to the rules with `firebase deploy --only firestore:rules`.
+
+Students creating their own projects should replace `firebase-config.js`
+with their own web app config, update `.firebaserc` to their project ID,
+and authorize their own GitHub Pages domain in Authentication settings.
+The pilot's rules deliberately make quiz questions and submitted answers
+publicly readable; sign-in is required to write your own response.
+
 ## Part 1: Build the quiz document (no code)
 
 Before touching any JavaScript, you're going to create the actual data by
@@ -143,9 +161,9 @@ A few things to actually try, not just read:
 ## How it works
 
 - `firebase-config.js` -- your project's public identifier. Not secret.
-- `firestore.rules` -- a copy, for reference, of the rules you pasted into
-  the console. (This file isn't deployed automatically -- if you change your
-  rules, update both places.)
+- `firestore.rules` -- the deployed rules for the pilot. Changes aren't
+  deployed automatically; run `firebase deploy --only firestore:rules`
+  after editing them.
 - `app.js` -- signs you in with Google, reads the quiz document, renders one
   text box per question, saves your answers as
   `quizzes/quiz-1/responses/{your-uid}`, and listens to the whole
