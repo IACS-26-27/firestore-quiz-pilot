@@ -7,11 +7,12 @@ service cloud.firestore {
       allow read: if true;
 
       // Anyone with a school account can make a new quiz, as long as they
-      // put their own uid in "author".
+      // put their own uid in "author". It needs a title and a list of
+      // questions; authors can add any other fields they like.
       allow create: if request.auth != null
         && request.auth.token.email.matches('.*@innovationcharter[.]org$')
         && request.resource.data.author == request.auth.uid
-        && request.resource.data.keys().hasOnly(['title', 'questions', 'author'])
+        && request.resource.data.keys().hasAll(['title', 'questions', 'author'])
         && request.resource.data.title is string
         && request.resource.data.questions is list
         && request.resource.data.questions.size() <= 20;
@@ -22,7 +23,7 @@ service cloud.firestore {
       allow update: if request.auth != null
         && resource.data.author == request.auth.uid
         && request.resource.data.author == request.auth.uid
-        && request.resource.data.keys().hasOnly(['title', 'questions', 'author'])
+        && request.resource.data.keys().hasAll(['title', 'questions', 'author'])
         && request.resource.data.title is string
         && request.resource.data.questions is list
         && request.resource.data.questions.size() <= 20;
