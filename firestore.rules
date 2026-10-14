@@ -3,10 +3,31 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /quizzes/{quizId} {
-      // Anyone can read a quiz. Nobody can change one from a web page --
-      // quizzes are written in the Firebase console, which skips these rules.
+      // Anyone can read a quiz.
       allow read: if true;
-      allow write: if false;
+
+      // Anyone with a school account can make a new quiz, as long as they
+      // put their own uid in "author".
+      allow create: if request.auth != null
+        && request.auth.token.email.matches('.*@innovationcharter[.]org$')
+        && request.resource.data.author == request.auth.uid
+        && request.resource.data.keys().hasOnly(['title', 'questions', 'author'])
+        && request.resource.data.title is string
+        && request.resource.data.questions is list
+        && request.resource.data.questions.size() <= 20;
+
+      // Only a quiz's author can change or delete it, and they can't hand
+      // it to someone else. Quizzes with no author (like quiz-1, made in the
+      // console) can't be changed from a web page at all.
+      allow update: if request.auth != null
+        && resource.data.author == request.auth.uid
+        && request.resource.data.author == request.auth.uid
+        && request.resource.data.keys().hasOnly(['title', 'questions', 'author'])
+        && request.resource.data.title is string
+        && request.resource.data.questions is list
+        && request.resource.data.questions.size() <= 20;
+      allow delete: if request.auth != null
+        && resource.data.author == request.auth.uid;
 
       match /responses/{uid} {
         // Anyone can read everyone's responses.

@@ -25,16 +25,20 @@ quizzes/quiz-1                    { title, questions: [{ text }, ...] }
 quizzes/quiz-1/responses/{uid}    { answers: [...], name }
 ```
 
-Quizzes are written by hand in the Firebase console, which bypasses the
-rules. To add another quiz, create `quizzes/quiz-2` with the same shape.
-Students switch to it by changing `quizId` in `app.js`.
+quiz-1 was written by hand in the Firebase console, which bypasses the
+rules. Students can also create their own quizzes from the client (see
+Rules); Step 5's extensions ask them to. They switch quizzes by changing
+`quizId` in `app.js`.
 
 ## Rules
 
 [`firestore.rules`](firestore.rules), in short:
 
 - Anyone can read quizzes and responses.
-- Nobody can write a quiz from the client.
+- Any `@innovationcharter.org` account can create a quiz with
+  `author: <their uid>`, `title`, and a `questions` list (up to 20). Only
+  the author can edit or delete it. Quizzes with no `author` (like quiz-1,
+  made in the console) can't be changed from the client.
 - A user can write only `responses/{their uid}`, only with an
   `@innovationcharter.org` account. The document may contain only `answers`
   (a list of up to 20 items), `name`, and `submittedAt`. If `name` is
