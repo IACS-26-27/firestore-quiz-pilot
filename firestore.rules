@@ -1,36 +1,30 @@
 rules_version = '2';
 
-// Paste this into the Firebase Console -> Firestore Database -> Rules tab,
-// then click Publish. This is what actually protects your data -- not
-// firebase-config.js, which is public on purpose.
 service cloud.firestore {
   match /databases/{database}/documents {
     match /quizzes/{quizId} {
-      // Anyone can read the quiz (the questions themselves).
+      // Anyone can read a quiz. Nobody can change one from a web page --
+      // quizzes are written in the Firebase console, which skips these rules.
       allow read: if true;
-
-      // Nobody writes a quiz through the app. You author it by hand in the
-      // Firestore console, which uses your own Google account's permissions
-      // and is NOT subject to these rules at all -- rules only govern
-      // requests made through the client SDK (i.e. from app.js).
       allow write: if false;
 
       match /responses/{uid} {
-        // Anyone can read responses -- that's what lets the page show
-        // everyone's answers (and, later, turn it into a "guess whose
-        // answer is whose" game).
+        // Anyone can read everyone's responses.
         allow read: if true;
 
-        // You may only ever create or overwrite the response document
-        // whose ID is YOUR OWN uid, AND only with an @innovationcharter.org
-        // account. There is no document path that lets you write to
-        // someone else's response, and no shared counter anywhere to race
-        // or spoof.
+        // You can only write the response whose ID is your own uid,
+        // signed in with a school account, and it has to look like a
+        // response: an "answers" list, plus optionally your real name.
         allow create, update: if request.auth != null
           && request.auth.uid == uid
-          && request.auth.token.email.matches('.*@innovationcharter[.]org$');
+          && request.auth.token.email.matches('.*@innovationcharter[.]org$')
+          && request.resource.data.keys().hasOnly(['answers', 'name', 'submittedAt'])
+          && request.resource.data.answers is list
+          && request.resource.data.answers.size() <= 20
+          && (!('name' in request.resource.data)
+              || request.resource.data.name == request.auth.token.name);
 
-        // Nobody deletes a response once it exists.
+        // Nobody deletes a response.
         allow delete: if false;
       }
     }
