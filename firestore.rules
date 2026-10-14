@@ -22,11 +22,13 @@ service cloud.firestore {
         allow read: if true;
 
         // You may only ever create or overwrite the response document
-        // whose ID is YOUR OWN uid (now a real Google account uid, not an
-        // anonymous one). There is no document path that lets you write to
+        // whose ID is YOUR OWN uid, AND only with an @innovationcharter.org
+        // account. There is no document path that lets you write to
         // someone else's response, and no shared counter anywhere to race
         // or spoof.
-        allow create, update: if request.auth != null && request.auth.uid == uid;
+        allow create, update: if request.auth != null
+          && request.auth.uid == uid
+          && request.auth.token.email.matches('.*@innovationcharter[.]org$');
 
         // Nobody deletes a response once it exists.
         allow delete: if false;
