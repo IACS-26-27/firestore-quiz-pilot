@@ -35,15 +35,12 @@ Rules); Step 5's extensions ask them to. They switch quizzes by changing
 [`firestore.rules`](firestore.rules), in short:
 
 - Anyone can read quizzes and responses.
-- Any `@innovationcharter.org` account can create a quiz with
-  `author: <their uid>`, `title`, and a `questions` list (up to 20). Only
-  the author can edit or delete it. Quizzes with no `author` (like quiz-1,
-  made in the console) can't be changed from the client.
-- A user can write only `responses/{their uid}`, only with an
-  `@innovationcharter.org` account. The document may contain only `answers`
-  (a list of up to 20 items), `name`, and `submittedAt`. If `name` is
-  present, it must equal the name on the signed-in Google account.
-- Nobody can delete a response.
+- All writes need an `@innovationcharter.org` account.
+- Anyone can create a quiz with `author: <their uid>`. Only the author can
+  change or delete it. Quizzes with no `author` (like quiz-1, made in the
+  console) can't be changed from the client. Quiz shape isn't enforced.
+- Only the owner can write or delete `responses/{uid}`. A response needs
+  `name` (a string) and `answers` (a list); other fields are allowed.
 
 To deploy changes:
 

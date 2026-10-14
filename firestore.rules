@@ -2,52 +2,36 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSchoolAccount() {
+      return request.auth != null
+        && request.auth.token.email.matches('.*@innovationcharter[.]org$');
+    }
+
     match /quizzes/{quizId} {
       // Anyone can read a quiz.
       allow read: if true;
 
-      // Anyone with a school account can make a new quiz, as long as they
-      // put their own uid in "author". It needs a title and a list of
-      // questions; authors can add any other fields they like.
-      allow create: if request.auth != null
-        && request.auth.token.email.matches('.*@innovationcharter[.]org$')
-        && request.resource.data.author == request.auth.uid
-        && request.resource.data.keys().hasAll(['title', 'questions', 'author'])
-        && request.resource.data.title is string
-        && request.resource.data.questions is list
-        && request.resource.data.questions.size() <= 20;
-
-      // Only a quiz's author can change or delete it, and they can't hand
-      // it to someone else. Quizzes with no author (like quiz-1, made in the
-      // console) can't be changed from a web page at all.
-      allow update: if request.auth != null
-        && resource.data.author == request.auth.uid
-        && request.resource.data.author == request.auth.uid
-        && request.resource.data.keys().hasAll(['title', 'questions', 'author'])
-        && request.resource.data.title is string
-        && request.resource.data.questions is list
-        && request.resource.data.questions.size() <= 20;
-      allow delete: if request.auth != null
+      // Anyone with a school account can make a quiz, with themselves as
+      // the author. Only the author can change or delete it. Quizzes with
+      // no author (like quiz-1, made in the console) can't be changed from
+      // a web page.
+      allow create: if isSchoolAccount()
+        && request.resource.data.author == request.auth.uid;
+      allow update, delete: if isSchoolAccount()
         && resource.data.author == request.auth.uid;
 
       match /responses/{uid} {
         // Anyone can read everyone's responses.
         allow read: if true;
 
-        // You can only write the response whose ID is your own uid,
-        // signed in with a school account, and it has to look like a
-        // response: an "answers" list, plus optionally your real name.
-        allow create, update: if request.auth != null
+        // Only you can write your own response, and it needs a name (text)
+        // and answers (a list).
+        allow create, update: if isSchoolAccount()
           && request.auth.uid == uid
-          && request.auth.token.email.matches('.*@innovationcharter[.]org$')
-          && request.resource.data.keys().hasOnly(['answers', 'name', 'submittedAt'])
-          && request.resource.data.answers is list
-          && request.resource.data.answers.size() <= 20
-          && (!('name' in request.resource.data)
-              || request.resource.data.name == request.auth.token.name);
-
-        // Nobody deletes a response.
-        allow delete: if false;
+          && request.resource.data.name is string
+          && request.resource.data.answers is list;
+        allow delete: if isSchoolAccount()
+          && request.auth.uid == uid;
       }
     }
   }
