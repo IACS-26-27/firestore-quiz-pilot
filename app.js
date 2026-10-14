@@ -39,10 +39,12 @@ signInButton.addEventListener("click", async () => {
   // Step 2: show the questions
   for (const question of quiz.questions) {
     quizSection.innerHTML += `
-      <label>
-        ${question.text}
-        <input type="text">
-      </label>
+      <p>
+        <label>
+          ${question.text}
+          <input type="text">
+        </label>
+      </p>
     `;
   }
   quizSection.innerHTML += `<button id="submit">Submit</button>`;
