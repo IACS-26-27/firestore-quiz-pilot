@@ -16,16 +16,16 @@ service cloud.firestore {
       allow write: if false;
 
       match /responses/{uid} {
-        // Anyone can read responses -- we need that to compute the
-        // aggregate "54% Harry / 46% Ron" stats. (Discussion question: what
-        // does this rule also let a visitor see that you might not want
-        // public? See the README.)
+        // Anyone can read responses -- that's what lets the page show
+        // everyone's answers (and, later, turn it into a "guess whose
+        // answer is whose" game).
         allow read: if true;
 
         // You may only ever create or overwrite the response document
-        // whose ID is YOUR OWN uid. There is no way to write to another
-        // user's response document, and no document path holds a count
-        // that two people could race to update.
+        // whose ID is YOUR OWN uid (now a real Google account uid, not an
+        // anonymous one). There is no document path that lets you write to
+        // someone else's response, and no shared counter anywhere to race
+        // or spoof.
         allow create, update: if request.auth != null && request.auth.uid == uid;
 
         // Nobody deletes a response once it exists.

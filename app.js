@@ -2,7 +2,8 @@ import { firebaseConfig } from "./firebase-config.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {
   getAuth,
-  signInAnonymously,
+  GoogleAuthProvider,
+  signInWithPopup,
   onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
@@ -16,31 +17,42 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 // The quiz document you hand-authored in the Firestore console.
-// Collection: quizzes, Document ID: harry-or-ron
-const QUIZ_ID = "harry-or-ron";
+// Collection: quizzes, Document ID: quiz-1
+const QUIZ_ID = "quiz-1";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
 
 const statusEl = document.getElementById("status");
+const signInBtn = document.getElementById("sign-in");
 const quizEl = document.getElementById("quiz");
 const resultsEl = document.getElementById("results");
 
 let currentUser = null;
 let quizData = null;
 
-onAuthStateChanged(auth, async (user) => {
-  currentUser = user;
-  if (!user) return;
-  statusEl.textContent = "Signed in. Loading quiz...";
-  await loadQuiz();
-  await checkExistingResponse();
+signInBtn.addEventListener("click", () => {
+  signInWithPopup(auth, provider).catch((err) => {
+    statusEl.textContent = "Sign-in failed: " + err.message;
+    console.error(err);
+  });
 });
 
-signInAnonymously(auth).catch((err) => {
-  statusEl.textContent = "Sign-in failed: " + err.message;
-  console.error(err);
+onAuthStateChanged(auth, async (user) => {
+  currentUser = user;
+  if (!user) {
+    signInBtn.hidden = false;
+    statusEl.textContent = "Sign in to take the quiz.";
+    quizEl.innerHTML = "";
+    resultsEl.innerHTML = "";
+    return;
+  }
+  signInBtn.hidden = true;
+  statusEl.textContent = `Signed in as ${user.displayName || user.email}. Loading quiz...`;
+  await loadQuiz();
+  await checkExistingResponse();
 });
 
 async function loadQuiz() {
@@ -70,32 +82,25 @@ function renderQuiz(quiz) {
   form.id = "quiz-form";
 
   quiz.questions.forEach((question, qIndex) => {
-    const fieldset = document.createElement("fieldset");
-    const legend = document.createElement("legend");
-    legend.textContent = question.text;
-    fieldset.appendChild(legend);
+    const label = document.createElement("label");
+    label.textContent = question.text;
+    label.htmlFor = `q${qIndex}`;
 
-    question.options.forEach((option, oIndex) => {
-      const label = document.createElement("label");
-      label.className = "option";
+    const input = document.createElement("input");
+    input.type = "text";
+    input.id = `q${qIndex}`;
+    input.required = true;
 
-      const input = document.createElement("input");
-      input.type = "radio";
-      input.name = `q${qIndex}`;
-      input.value = oIndex;
-      input.required = true;
-
-      label.appendChild(input);
-      label.append(" " + option.text);
-      fieldset.appendChild(label);
-    });
-
-    form.appendChild(fieldset);
+    const wrapper = document.createElement("div");
+    wrapper.className = "field";
+    wrapper.appendChild(label);
+    wrapper.appendChild(input);
+    form.appendChild(wrapper);
   });
 
   const submit = document.createElement("button");
   submit.type = "submit";
-  submit.textContent = "See my result";
+  submit.textContent = "Submit my answers";
   form.appendChild(submit);
 
   form.addEventListener("submit", handleSubmit);
@@ -106,95 +111,87 @@ async function checkExistingResponse() {
   const responseRef = doc(db, "quizzes", QUIZ_ID, "responses", currentUser.uid);
   const snap = await getDoc(responseRef);
   if (snap.exists()) {
-    showYourResult(snap.data().result);
+    fillInAnswers(snap.data().answers);
+    showSubmitted();
   }
-  watchAggregateResults();
+  watchAllResponses();
+}
+
+function fillInAnswers(answers) {
+  answers.forEach((value, qIndex) => {
+    const input = document.getElementById(`q${qIndex}`);
+    if (input) input.value = value;
+  });
 }
 
 async function handleSubmit(event) {
   event.preventDefault();
   const form = event.target;
 
-  const tally = {};
-  const answers = quizData.questions.map((question, qIndex) => {
-    const picked = form.querySelector(`input[name="q${qIndex}"]:checked`);
-    const optionIndex = Number(picked.value);
-    const category = question.options[optionIndex].category;
-    tally[category] = (tally[category] || 0) + 1;
-    return optionIndex;
+  const answers = quizData.questions.map((_, qIndex) => {
+    return document.getElementById(`q${qIndex}`).value.trim();
   });
-
-  // Whichever category got picked the most times wins. (Ties just go to
-  // whichever category appears first -- good enough for a hello-world.)
-  const result = Object.keys(tally).reduce((best, category) =>
-    tally[category] > (tally[best] || 0) ? category : best,
-  );
 
   const responseRef = doc(db, "quizzes", QUIZ_ID, "responses", currentUser.uid);
   try {
     await setDoc(responseRef, {
       answers,
-      result,
       submittedAt: serverTimestamp(),
     });
-    showYourResult(result);
+    showSubmitted();
   } catch (err) {
-    statusEl.textContent = "Couldn't save your response: " + err.message;
+    statusEl.textContent = "Couldn't save your answers: " + err.message;
     console.error(err);
   }
 }
 
-function showYourResult(result) {
-  const h3 = document.createElement("h3");
-  h3.id = "your-result";
-  h3.textContent = `Your result: ${result}`;
-  const existing = document.getElementById("your-result");
-  if (existing) {
-    existing.replaceWith(h3);
-  } else {
-    quizEl.appendChild(h3);
-  }
+function showSubmitted() {
+  const existing = document.getElementById("submitted-note");
+  if (existing) return;
+  const p = document.createElement("p");
+  p.id = "submitted-note";
+  p.textContent = "Your answers are saved. Submit again any time to update them.";
+  quizEl.appendChild(p);
 }
 
-function watchAggregateResults() {
+function watchAllResponses() {
   const responsesRef = collection(db, "quizzes", QUIZ_ID, "responses");
   onSnapshot(responsesRef, (snapshot) => {
-    const tally = {};
-    snapshot.forEach((docSnap) => {
-      const { result } = docSnap.data();
-      tally[result] = (tally[result] || 0) + 1;
-    });
-    renderAggregate(tally, snapshot.size);
+    renderAllResponses(snapshot, quizData.questions);
   });
 }
 
-function renderAggregate(tally, total) {
+// Shows every response as-is (no names attached) -- this is the raw
+// material for a "guess whose answer is whose" game. Revealing names is
+// intentionally left as a follow-up, not automated here.
+function renderAllResponses(snapshot, questions) {
   resultsEl.innerHTML = "";
 
   const heading = document.createElement("h3");
-  heading.textContent = `Everyone's results so far (${total} response${total === 1 ? "" : "s"})`;
+  heading.textContent = `${snapshot.size} response${snapshot.size === 1 ? "" : "s"} so far`;
   resultsEl.appendChild(heading);
 
-  Object.entries(tally)
-    .sort((a, b) => b[1] - a[1])
-    .forEach(([category, count]) => {
-      const pct = total ? Math.round((count / total) * 100) : 0;
+  const table = document.createElement("table");
 
-      const row = document.createElement("div");
-      row.className = "bar-row";
+  const headRow = document.createElement("tr");
+  questions.forEach((q) => {
+    const th = document.createElement("th");
+    th.textContent = q.text;
+    headRow.appendChild(th);
+  });
+  table.appendChild(headRow);
 
-      const label = document.createElement("span");
-      label.textContent = `${category} (${pct}%)`;
-
-      const bar = document.createElement("div");
-      bar.className = "bar";
-      const fill = document.createElement("div");
-      fill.className = "bar-fill";
-      fill.style.width = pct + "%";
-      bar.appendChild(fill);
-
-      row.appendChild(label);
-      row.appendChild(bar);
-      resultsEl.appendChild(row);
+  snapshot.forEach((docSnap) => {
+    const { answers } = docSnap.data();
+    const row = document.createElement("tr");
+    answers.forEach((answer) => {
+      const td = document.createElement("td");
+      // textContent, not innerHTML -- never trust stored text as HTML.
+      td.textContent = answer;
+      row.appendChild(td);
     });
+    table.appendChild(row);
+  });
+
+  resultsEl.appendChild(table);
 }

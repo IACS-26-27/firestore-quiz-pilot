@@ -11,51 +11,57 @@ body {
   font-size: 0.9rem;
 }
 
-fieldset {
-  margin-bottom: 1rem;
-  border: 1px solid #ddd;
-  border-radius: 0.5rem;
-}
-
-legend {
-  font-weight: bold;
-  padding: 0 0.5rem;
-}
-
-.option {
-  display: block;
-  padding: 0.25rem 0;
-}
-
-button {
+#sign-in {
   font: inherit;
   padding: 0.5rem 1rem;
   cursor: pointer;
+}
+
+.field {
+  margin-bottom: 0.75rem;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.field label {
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+input[type="text"] {
+  font: inherit;
+  padding: 0.5rem;
+}
+
+#quiz button {
+  font: inherit;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  margin-top: 0.5rem;
+}
+
+#submitted-note {
+  color: #2a6;
+  font-size: 0.9rem;
 }
 
 #results {
   margin-top: 2rem;
 }
 
-.bar-row {
-  margin-bottom: 0.5rem;
+table {
+  border-collapse: collapse;
+  width: 100%;
 }
 
-.bar-row span {
-  display: block;
+th,
+td {
+  border: 1px solid #ddd;
+  padding: 0.4rem 0.6rem;
+  text-align: left;
   font-size: 0.9rem;
-  margin-bottom: 0.15rem;
 }
 
-.bar {
-  background: #eee;
-  border-radius: 0.25rem;
-  overflow: hidden;
-  height: 1.25rem;
-}
-
-.bar-fill {
-  background: #556;
-  height: 100%;
-  transition: width 0.3s ease;
+th {
+  background: #f5f5f5;
 }
